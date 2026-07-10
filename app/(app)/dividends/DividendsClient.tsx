@@ -96,7 +96,7 @@ export default function DividendsClient({ holdings: initial, accounts, userId }:
       <div className="grid4" style={{ marginBottom: 22 }}>
         {[
           { label: 'Annual income',       value: fmt(divTotal),       sub: `$${Math.round(divTotal / 12).toLocaleString()}/mo` },
-          { label: 'Portfolio value',     value: fmt(portValue),      sub: `Gain: ${fmt(portValue - portCost)}` },
+          { label: 'Dividend portfolio value', value: fmt(portValue), sub: `Incl. retirement & taxable · Gain: ${fmt(portValue - portCost)}` },
           { label: 'Weighted YOC',        value: yocAvg.toFixed(1) + '%', sub: 'Yield on cost' },
           { label: 'DRIP enabled',        value: String(dripCount),   sub: `of ${holdings.length} holdings` },
         ].map(k => (
