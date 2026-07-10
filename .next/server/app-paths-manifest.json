@@ -1,0 +1,6 @@
+{
+  "/(app)/fire/page": "app/(app)/fire/page.js",
+  "/(app)/dashboard/page": "app/(app)/dashboard/page.js",
+  "/(app)/debt/page": "app/(app)/debt/page.js",
+  "/(app)/goals/page": "app/(app)/goals/page.js"
+}
