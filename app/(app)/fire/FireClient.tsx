@@ -34,16 +34,19 @@ type Props = {
 export default function FireClient({ settings: init, userId, passiveMonthly, totalInvested }: Props) {
   const safePassive = Number.isFinite(passiveMonthly) ? passiveMonthly : 0
 
-  const [f, setF] = useState<FireSettings>(init ?? {
-    id: '', user_id: userId,
+  // Always use live engine value for invested — other saved settings (age, contribution, etc.) are preserved
+  const [f, setF] = useState<FireSettings>({
+    ...(init ?? {
+      id: '', user_id: userId,
+      annual_contribution: 41000,
+      expected_return: 0.07,
+      annual_spending: 60000,
+      current_age: 39,
+      monthly_expenses: 5000,
+      target_retirement_age: 65,
+      updated_at: '',
+    }),
     invested: totalInvested,
-    annual_contribution: 41000,
-    expected_return: 0.07,
-    annual_spending: 60000,
-    current_age: 39,
-    monthly_expenses: 5000,
-    target_retirement_age: 65,
-    updated_at: '',
   })
   const [saving, setSaving] = useState(false)
   const supabase = createClient()
@@ -55,7 +58,6 @@ export default function FireClient({ settings: init, userId, passiveMonthly, tot
   // ── Computations ──
   const fiNumber           = f.annual_spending * 25
   const targetRetireAge    = f.target_retirement_age ?? 65
-  // Math.max(0,...) — a person already at retirement age has 0 compounding years
   const yearsToRetirement  = Math.max(0, targetRetireAge - f.current_age)
   const coastNumber        = yearsToRetirement === 0
     ? fiNumber
