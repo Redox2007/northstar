@@ -28,16 +28,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const portValue = hlds.reduce((s, h) => s + h.shares * h.current_value, 0)
   const totalInvested = investedAssets + portValue
 
-  const invested500kPct = (totalInvested / 500000) * 100
-  const investedStr = '$' + Math.round(totalInvested / 1000) + 'k'
+  const nextGoal      = totalInvested < 300_000 ? 300_000 : 500_000
+  const nextGoalLabel = totalInvested < 300_000 ? '$300k invested' : '$500k invested'
+  const investedPct   = Math.min(100, Math.round((totalInvested / nextGoal) * 100))
+  const investedStr   = '$' + Math.round(totalInvested / 1000) + 'k'
+  const nextGoalStr   = totalInvested < 300_000 ? '$300k' : '$500k'
 
   const userName = user.email?.split('@')[0] ?? 'You'
 
   return (
     <div className="ffapp">
       <Sidebar
-        investedPct={invested500kPct}
+        investedPct={investedPct}
         investedStr={investedStr}
+        nextGoalLabel={nextGoalLabel}
+        nextGoalStr={nextGoalStr}
         userName={userName}
       />
       <div className="main">

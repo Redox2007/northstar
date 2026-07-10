@@ -17,10 +17,12 @@ const NAV = [
 type SidebarProps = {
   investedPct: number
   investedStr: string
+  nextGoalLabel: string
+  nextGoalStr: string
   userName: string
 }
 
-export default function Sidebar({ investedPct, investedStr, userName }: SidebarProps) {
+export default function Sidebar({ investedPct, investedStr, nextGoalLabel, nextGoalStr, userName }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -56,12 +58,12 @@ export default function Sidebar({ investedPct, investedStr, userName }: SidebarP
       {/* Next milestone card */}
       <div className="sbcard" style={{ marginTop: 'auto' }}>
         <div style={{ fontSize: 12.5, color: '#b3a794', marginBottom: 6 }}>Next milestone</div>
-        <div className="head" style={{ fontSize: 19, color: '#fbf6ee', lineHeight: 1.3 }}>$500k invested</div>
+        <div className="head" style={{ fontSize: 19, color: '#fbf6ee', lineHeight: 1.3 }}>{nextGoalLabel}</div>
         <div className="track" style={{ marginTop: 12, background: '#5a4c3b' }}>
           <div className="fillamb" style={{ width: `${pct}%` }} />
         </div>
         <div style={{ fontSize: 12, color: '#b3a794', marginTop: 8 }}>
-          {investedStr} of $500k · {pct}%
+          {investedStr} of {nextGoalStr} · {pct}%
         </div>
       </div>
 
