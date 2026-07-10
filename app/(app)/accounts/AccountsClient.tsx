@@ -18,47 +18,52 @@ function fmt(n: number) {
 }
 
 type Props = {
-  accounts:         Account[]
-  userId:           string
-  portValue:        number   // dividend holdings market value
-  reEquity:         number   // sum(property value − mortgage)
-  linkedAccountIds: string[] // accounts whose balance is subsumed by holdings
+  accounts:            Account[]
+  userId:              string
+  holdingsByCategory:  Record<string, number>  // holdings market value bucketed by account category
+  holdingsByAccountId: Record<string, number>  // holdings market value per linked account (for reconciliation)
+  reEquity:            number
 }
 
 type ModalState = { mode: 'add' | 'edit'; account?: Account } | null
 
-export default function AccountsClient({ accounts: initial, userId, portValue, reEquity, linkedAccountIds }: Props) {
+export default function AccountsClient({
+  accounts: initial, userId,
+  holdingsByCategory, holdingsByAccountId, reEquity,
+}: Props) {
   const [accounts, setAccounts] = useState(initial)
-  const [modal, setModal] = useState<ModalState>(null)
-  const [form, setForm] = useState<Record<string, string>>({})
-  const [saving, setSaving] = useState(false)
-  const router = useRouter()
+  const [modal, setModal]       = useState<ModalState>(null)
+  const [form, setForm]         = useState<Record<string, string>>({})
+  const [saving, setSaving]     = useState(false)
+  const router  = useRouter()
   const supabase = createClient()
 
-  const linkedSet = new Set(linkedAccountIds)
+  const linkedAccountIds = new Set(Object.keys(holdingsByAccountId))
 
-  // ── KPI bucket totals (exclude linked accounts — holdings are source of truth) ──
-  const catTotal = (cat: string) =>
+  // Unlinked account balances per category
+  const unlinkedTotal = (cat: string) =>
     accounts
-      .filter(a => (a.category ?? 'liquidity') === cat && !linkedSet.has(a.id))
+      .filter(a => (a.category ?? 'liquidity') === cat && !linkedAccountIds.has(a.id))
       .reduce((s, a) => s + a.balance, 0)
 
-  const retirementTotal = catTotal('retirement')
-  const taxableAcctTotal = catTotal('taxable')
-  const taxableTotal    = taxableAcctTotal + portValue   // matches dashboard
-  const insuranceTotal  = catTotal('insurance')
-  const liquidityTotal  = catTotal('liquidity')
+  // Correct bucket totals = unlinked account balances + holdings in that category
+  const retirementTotal = unlinkedTotal('retirement') + (holdingsByCategory.retirement ?? 0)
+  const taxableTotal    = unlinkedTotal('taxable')    + (holdingsByCategory.taxable    ?? 0)
+  const insuranceTotal  = unlinkedTotal('insurance')  + (holdingsByCategory.insurance  ?? 0)
+  const liquidityTotal  = unlinkedTotal('liquidity')  + (holdingsByCategory.liquidity  ?? 0)
 
-  // ── Allocation denominator: all unique value sources ──
   const totAssets = accounts.filter(a => a.balance > 0).reduce((s, a) => s + a.balance, 0) || 1
 
-  // ── Groups for table ──
   const groups = CATEGORIES.map(c => ({
     key:   c.value,
     label: c.label,
     items: accounts.filter(a => (a.category ?? 'liquidity') === c.value),
-    total: catTotal(c.value),
-  })).filter(g => g.items.length > 0)
+    total: c.value === 'retirement' ? retirementTotal
+         : c.value === 'taxable'    ? taxableTotal
+         : c.value === 'insurance'  ? insuranceTotal
+         : liquidityTotal,
+    holdingsValue: holdingsByCategory[c.value] ?? 0,
+  })).filter(g => g.items.length > 0 || g.holdingsValue > 0)
 
   function openAdd() {
     setForm({ name: '', category: 'retirement', type: '', balance: '' })
@@ -99,16 +104,28 @@ export default function AccountsClient({ accounts: initial, userId, portValue, r
   }
 
   const kpis = [
-    { label: 'Retirement Assets',    value: fmt(retirementTotal), sub: '401(k) · IRA · HSA' },
-    { label: 'Taxable Investments',  value: fmt(taxableTotal),    sub: portValue > 0 ? `Incl. $${Math.round(portValue).toLocaleString()} dividend portfolio` : 'Brokerage accounts' },
-    { label: 'Real Estate Equity',   value: fmt(reEquity),        sub: 'Property value − mortgage' },
-    { label: 'Insurance / IUL',      value: fmt(insuranceTotal),  sub: 'Cash value' },
-    { label: 'Liquidity',            value: fmt(liquidityTotal),  sub: 'Cash + emergency fund' },
+    {
+      label: 'Retirement Assets',
+      value: fmt(retirementTotal),
+      sub: holdingsByCategory.retirement
+        ? `Incl. ${fmt(holdingsByCategory.retirement)} in holdings`
+        : '401(k) · IRA · HSA',
+    },
+    {
+      label: 'Taxable Investments',
+      value: fmt(taxableTotal),
+      sub: holdingsByCategory.taxable
+        ? `Incl. ${fmt(holdingsByCategory.taxable)} in holdings`
+        : 'Brokerage accounts',
+    },
+    { label: 'Real Estate Equity', value: fmt(reEquity),       sub: 'Property value − mortgage' },
+    { label: 'Insurance / IUL',    value: fmt(insuranceTotal), sub: 'Cash value' },
+    { label: 'Liquidity',          value: fmt(liquidityTotal), sub: 'Cash + emergency fund' },
   ]
 
   return (
     <>
-      {/* ── KPI cards — now 5 buckets matching net worth formula ── */}
+      {/* ── KPI cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 22 }}>
         {kpis.map(k => (
           <div className="card" key={k.label}>
@@ -149,28 +166,29 @@ export default function AccountsClient({ accounts: initial, userId, portValue, r
             <tbody>
               {groups.map(grp => (
                 <>
-                  {/* Group header row */}
                   <tr key={`hdr-${grp.key}`}>
                     <td colSpan={5} style={{ padding: '16px 0 6px' }}>
                       <div className="rowbtwn">
                         <span className="cardtitle" style={{ fontSize: 13 }}>{grp.label}</span>
                         <span style={{ fontWeight: 700, fontSize: 13 }}>
-                          {fmt(grp.key === 'taxable' ? grp.total + portValue : grp.total)}
-                          {grp.key === 'taxable' && portValue > 0 && (
+                          {fmt(grp.total)}
+                          {grp.holdingsValue > 0 && (
                             <span className="subtle" style={{ fontSize: 11, fontWeight: 400, marginLeft: 6 }}>
-                              (incl. {fmt(portValue)} portfolio)
+                              (incl. {fmt(grp.holdingsValue)} holdings)
                             </span>
                           )}
                         </span>
                       </div>
                     </td>
                   </tr>
-                  {/* Account rows */}
                   {grp.items.map(a => {
-                    const isLinked = linkedSet.has(a.id)
-                    const pct = Math.round(Math.abs(a.balance) / totAssets * 100)
+                    const isLinked     = linkedAccountIds.has(a.id)
+                    const holdingsVal  = holdingsByAccountId[a.id] ?? 0
+                    const diff         = Math.abs(a.balance - holdingsVal)
+                    const showRecon    = isLinked && diff > 50  // warn if off by more than $50
+                    const pct          = Math.round(Math.abs(a.balance) / totAssets * 100)
                     return (
-                      <tr key={a.id} style={isLinked ? { opacity: 0.55 } : {}}>
+                      <tr key={a.id} style={isLinked ? { opacity: 0.65 } : {}}>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                             <div className="acctic">{a.code}</div>
@@ -178,7 +196,12 @@ export default function AccountsClient({ accounts: initial, userId, portValue, r
                               <span style={{ fontWeight: 600 }}>{a.name}</span>
                               {isLinked && (
                                 <div style={{ fontSize: 11, color: '#9a6c3e', marginTop: 1 }}>
-                                  ↳ balance excluded — holdings are source of truth
+                                  ↳ balance excluded — holdings are source of truth ({fmt(holdingsVal)})
+                                </div>
+                              )}
+                              {showRecon && (
+                                <div style={{ fontSize: 11, color: '#c0612b', marginTop: 1 }}>
+                                  ⚠ Account balance ({fmt(a.balance)}) differs from holdings by {fmt(diff)} — update holdings or account balance
                                 </div>
                               )}
                             </div>
@@ -196,7 +219,7 @@ export default function AccountsClient({ accounts: initial, userId, portValue, r
                         <td className="rt" style={{ fontWeight: 700, color: a.balance < 0 ? 'var(--accent)' : 'inherit' }}>
                           {fmt(a.balance)}
                         </td>
-                        <td style={{ width: 64 }}>
+                        <td>
                           <div style={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
                             <button className="delx" onClick={() => openEdit(a)}>✎</button>
                             <button className="delx" onClick={() => handleDelete(a.id)}>×</button>
@@ -212,7 +235,6 @@ export default function AccountsClient({ accounts: initial, userId, portValue, r
         )}
       </div>
 
-      {/* ── Modal ── */}
       {modal && (
         <div className="overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
@@ -225,7 +247,7 @@ export default function AccountsClient({ accounts: initial, userId, portValue, r
 
             <div className="field">
               <label>Account name</label>
-              <input className="inp" type="text" placeholder="e.g. Fidelity Brokerage"
+              <input className="inp" type="text" placeholder="e.g. Fidelity 401(k)"
                 value={form.name ?? ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
             </div>
 
@@ -241,7 +263,7 @@ export default function AccountsClient({ accounts: initial, userId, portValue, r
 
             <div className="field">
               <label>Type</label>
-              <input className="inp" type="text" placeholder="e.g. Taxable, Roth IRA"
+              <input className="inp" type="text" placeholder="e.g. 401K, Roth IRA, HSA"
                 value={form.type ?? ''} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} />
             </div>
 

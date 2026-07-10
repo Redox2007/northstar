@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Account, Holding, Property } from '@/types'
+import { Account, Holding, Property, Debt } from '@/types'
+import { computeFinancials } from '@/lib/financial-engine'
 import AccountsClient from './AccountsClient'
 
 export default async function AccountsPage() {
@@ -12,19 +13,33 @@ export default async function AccountsPage() {
     { data: accounts },
     { data: holdings },
     { data: properties },
+    { data: debts },
   ] = await Promise.all([
     supabase.from('accounts').select('*').eq('user_id', user.id).order('balance', { ascending: false }),
-    supabase.from('holdings').select('shares,current_value,account_id').eq('user_id', user.id),
+    supabase.from('holdings').select('*').eq('user_id', user.id),
     supabase.from('properties').select('value,mortgage_balance').eq('user_id', user.id),
+    supabase.from('debts').select('*').eq('user_id', user.id),
   ])
 
-  const hlds  = (holdings   as Pick<Holding,  'shares' | 'current_value' | 'account_id'>[]) ?? []
+  const accs  = (accounts   as Account[])  ?? []
+  const hlds  = (holdings   as Holding[])  ?? []
   const props = (properties as Pick<Property, 'value' | 'mortgage_balance'>[]) ?? []
 
-  // These two values make the accounts page consistent with the dashboard
-  const linkedAccountIds = new Set(hlds.map(h => h.account_id).filter(Boolean))
-  const portValue = hlds.reduce((s, h) => s + (h.shares ?? 0) * (h.current_value ?? 0), 0)
-  const reEquity  = props.reduce((s, p) => s + (p.value - p.mortgage_balance), 0)
+  const e = computeFinancials({
+    accounts:   accs,
+    holdings:   hlds,
+    properties: props as Property[],
+    debts:      (debts as Debt[]) ?? [],
+    fire:       null,
+  })
+
+  // Per-account holdings value — for reconciliation warnings
+  const holdingsByAccountId = hlds.reduce<Record<string, number>>((map, h) => {
+    if (h.account_id) {
+      map[h.account_id] = (map[h.account_id] ?? 0) + (h.shares ?? 0) * (h.current_value ?? 0)
+    }
+    return map
+  }, {})
 
   return (
     <>
@@ -40,11 +55,11 @@ export default async function AccountsPage() {
       </div>
       <div className="body">
         <AccountsClient
-          accounts={(accounts as Account[]) ?? []}
+          accounts={accs}
           userId={user.id}
-          portValue={portValue}
-          reEquity={reEquity}
-          linkedAccountIds={Array.from(linkedAccountIds) as string[]}
+          holdingsByCategory={e.holdingsByCategory}
+          holdingsByAccountId={holdingsByAccountId}
+          reEquity={e.reEquity}
         />
       </div>
     </>
