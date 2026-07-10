@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/ssr'
+mport { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
  
 export async function createClient() {
@@ -25,3 +25,4 @@ export async function createClient() {
     }
   )
 }
+ 
