@@ -111,8 +111,8 @@ export default function FireClient({ settings: init, userId, passiveMonthly, tot
 
   const sliders = [
     {
-      label:   'Investable assets (excl. home equity)',
-      sub:     'Retirement + taxable accounts',
+      label:   'Investable assets (excl. primary residence)',
+      sub:     'Retirement + taxable + rental equity',
       key:     'invested' as const,
       value:   f.invested, min: 0, max: 1500000, step: 5000,
       display: fmtFull(f.invested),

@@ -25,10 +25,11 @@ export interface EngineOutput {
   holdingsByCategory: Record<string, number>  // for per-bucket display in accounts page
 
   // ── Real estate ──
-  reEquity:   number   // sum(value − mortgage_balance)
-  rentalCF:   number   // monthly net cash flow (rentals only, can be negative)
-  reCashIn:   number   // total cash invested in rentals
-  reCoC:      number   // cash-on-cash return (%)
+  reEquity:     number   // sum(value − mortgage_balance) across ALL properties
+  rentalEquity: number   // equity from rental properties only (investable asset)
+  rentalCF:     number   // monthly net cash flow (rentals only, can be negative)
+  reCashIn:     number   // total cash invested in rentals
+  reCoC:        number   // cash-on-cash return (%)
 
   // ── Debt ──
   totalDebt:    number
@@ -37,7 +38,7 @@ export interface EngineOutput {
 
   // ── Net worth ──
   netWorth:      number   // retirement + taxable + reEquity + insurance + liquidity − consumerDebt
-  totalInvested: number   // retirement + taxable (investable assets for FIRE)
+  totalInvested: number   // retirement + taxable (liquid investable assets, excl. real estate)
 
   // ── Passive income ──
   divIncome:      number   // annual dividend income
@@ -69,7 +70,7 @@ export function computeFinancials({ accounts, holdings, properties, debts, fire 
   // Accounts that are linked to holdings are excluded from the account total
   // (holdings market value is the source of truth for those accounts).
 
-  const accountById     = new Map(accounts.map(a => [a.id, a]))
+  const accountById      = new Map(accounts.map(a => [a.id, a]))
   const linkedAccountIds = new Set(holdings.map(h => h.account_id).filter(Boolean))
 
   const unlinkedAccountTotal = (cat: string): number =>
@@ -94,11 +95,12 @@ export function computeFinancials({ accounts, holdings, properties, debts, fire 
   const portValue       = Object.values(holdingsByCategory).reduce((s, v) => s + v, 0)
 
   // ── Real estate ──
-  const rentalProps = properties.filter(p => (p.type ?? 'rental') === 'rental')
-  const reEquity    = properties.reduce((s, p) => s + (p.value - p.mortgage_balance), 0)
-  const rentalCF    = rentalProps.reduce((s, p) => s + (p.monthly_rent - p.monthly_expenses - p.monthly_pi), 0)
-  const reCashIn    = rentalProps.reduce((s, p) => s + (p.cash_invested ?? 0), 0)
-  const reCoC       = reCashIn > 0 ? (rentalCF * 12) / reCashIn * 100 : 0
+  const rentalProps  = properties.filter(p => (p.type ?? 'rental') === 'rental')
+  const reEquity     = properties.reduce((s, p) => s + (p.value - p.mortgage_balance), 0)
+  const rentalEquity = rentalProps.reduce((s, p) => s + (p.value - p.mortgage_balance), 0)
+  const rentalCF     = rentalProps.reduce((s, p) => s + (p.monthly_rent - p.monthly_expenses - p.monthly_pi), 0)
+  const reCashIn     = rentalProps.reduce((s, p) => s + (p.cash_invested ?? 0), 0)
+  const reCoC        = reCashIn > 0 ? (rentalCF * 12) / reCashIn * 100 : 0
 
   // ── Debt ──
   // Use explicit category field ('mortgage') rather than fragile text matching.
@@ -113,7 +115,7 @@ export function computeFinancials({ accounts, holdings, properties, debts, fire 
   // reEquity already nets out mortgage balances (value − mortgage_balance),
   // so we only subtract consumer debt to avoid double-counting.
   const netWorth      = retirementTotal + taxableTotal + reEquity + insuranceTotal + liquidityTotal - consumerDebt
-  const totalInvested = retirementTotal + taxableTotal
+  const totalInvested = retirementTotal + taxableTotal   // liquid accounts only; rental equity added separately in FIRE page
 
   // ── Passive income ──
   // rentalCF is included at full value (positive or negative).
@@ -131,9 +133,9 @@ export function computeFinancials({ accounts, holdings, properties, debts, fire 
   // ── FIRE numbers ──
   // yearsToRetirement uses Math.max(0,...) — a 65-year-old has 0 compounding years,
   // not 1. coastNumber equals fiNumber when already at or past retirement age.
-  const fiNumber           = annualSpending * 25
-  const yearsToRetirement  = Math.max(0, targetRetirementAge - currentAge)
-  const coastNumber        = yearsToRetirement === 0
+  const fiNumber          = annualSpending * 25
+  const yearsToRetirement = Math.max(0, targetRetirementAge - currentAge)
+  const coastNumber       = yearsToRetirement === 0
     ? fiNumber
     : fiNumber / Math.pow(1 + expectedReturn, yearsToRetirement)
   const coastPct  = Math.min(100, Math.round(totalInvested / coastNumber * 100))
@@ -142,7 +144,7 @@ export function computeFinancials({ accounts, holdings, properties, debts, fire 
   return {
     retirementTotal, taxableTotal, insuranceTotal, liquidityTotal,
     portValue, holdingsByCategory,
-    reEquity, rentalCF, reCashIn, reCoC,
+    reEquity, rentalEquity, rentalCF, reCashIn, reCoC,
     totalDebt, mortgageDebt, consumerDebt,
     netWorth, totalInvested,
     divIncome, passiveMonthly, passiveAnnual,

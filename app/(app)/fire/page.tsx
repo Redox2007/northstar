@@ -33,7 +33,7 @@ export default async function FirePage() {
     fire,
   })
 
-  const { passiveMonthly, totalInvested } = e
+  const { passiveMonthly, totalInvested, rentalEquity } = e
 
   return (
     <>
@@ -52,7 +52,7 @@ export default async function FirePage() {
           settings={fire}
           userId={user.id}
           passiveMonthly={passiveMonthly}
-          totalInvested={Math.round(totalInvested)}
+          totalInvested={Math.round(totalInvested + rentalEquity)}
         />
       </div>
     </>
