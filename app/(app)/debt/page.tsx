@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Debt } from '@/types'
 import DebtClient from './DebtClient'
+import { MarketStatusPill } from '@/components/MarketStatusPill'
 
 export default async function DebtPage() {
   const supabase = await createClient()
@@ -19,7 +20,7 @@ export default async function DebtPage() {
           <div className="h2">Debt tracker</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div className="pill">● All accounts synced</div>
+          <MarketStatusPill />
           <div className="avatar">{(user.email ?? 'U').charAt(0).toUpperCase()}</div>
         </div>
       </div>

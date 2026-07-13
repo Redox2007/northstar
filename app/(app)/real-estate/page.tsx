@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Property } from '@/types'
 import RealEstateClient from './RealEstateClient'
+import { MarketStatusPill } from '@/components/MarketStatusPill'
 
 export default async function RealEstatePage() {
   const supabase = await createClient()
@@ -19,7 +20,7 @@ export default async function RealEstatePage() {
           <div className="h2">Real estate</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div className="pill">● All accounts synced</div>
+          <MarketStatusPill />
           <div className="avatar">{(user.email ?? 'U').charAt(0).toUpperCase()}</div>
         </div>
       </div>

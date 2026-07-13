@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { Account, Holding, Property, Debt } from '@/types'
 import { computeFinancials } from '@/lib/financial-engine'
 import AccountsClient from './AccountsClient'
+import { MarketStatusPill } from '@/components/MarketStatusPill'
 
 export default async function AccountsPage() {
   const supabase = await createClient()
@@ -49,7 +50,7 @@ export default async function AccountsPage() {
           <div className="h2">Accounts</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div className="pill">● All accounts synced</div>
+          <MarketStatusPill />
           <div className="avatar">{(user.email ?? 'U').charAt(0).toUpperCase()}</div>
         </div>
       </div>

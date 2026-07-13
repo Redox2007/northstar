@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Account, Holding, Property, Debt, FireSettings } from '@/types'
 import { computeFinancials } from '@/lib/financial-engine'
+import { MarketStatusPill } from '@/components/MarketStatusPill'
 
 function fmt(n: number) {
   return '$' + Math.abs(Math.round(n)).toLocaleString('en-US')
@@ -97,7 +98,7 @@ export default async function GoalsPage() {
           <div className="h2">Goals</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div className="pill">● All accounts synced</div>
+          <MarketStatusPill />
           <div className="avatar">{(user.email ?? 'U').charAt(0).toUpperCase()}</div>
         </div>
       </div>

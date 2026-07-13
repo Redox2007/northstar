@@ -1,0 +1,9 @@
+
+{
+  "crons": [
+    {
+      "path": "/api/cron/refresh-market-data",
+      "schedule": "0 2 * * *"
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Account, Holding, Property, Debt, FireSettings } from '@/types'
 import { computeFinancials } from '@/lib/financial-engine'
+import { MarketStatusPill } from '@/components/MarketStatusPill'
 
 function fmt(n: number) {
   const neg = n < 0
@@ -103,7 +104,7 @@ export default async function DashboardPage() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div className="pill">● All accounts synced</div>
+          <MarketStatusPill />
           <div className="avatar">{userName.charAt(0).toUpperCase()}</div>
         </div>
       </div>

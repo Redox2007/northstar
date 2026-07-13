@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { Account, FireSettings, Holding, Property, Debt } from '@/types'
 import { computeFinancials } from '@/lib/financial-engine'
 import FireClient from './FireClient'
+import { MarketStatusPill } from '@/components/MarketStatusPill'
 
 export default async function FirePage() {
   const supabase = await createClient()
@@ -43,7 +44,7 @@ export default async function FirePage() {
           <div className="h2">FIRE calculator</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div className="pill">● All accounts synced</div>
+          <MarketStatusPill />
           <div className="avatar">{(user.email ?? 'U').charAt(0).toUpperCase()}</div>
         </div>
       </div>

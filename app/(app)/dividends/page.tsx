@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Account, Holding } from '@/types'
 import DividendsClient from './DividendsClient'
+import { MarketStatusPill } from '@/components/MarketStatusPill'
 
 export default async function DividendsPage() {
   const supabase = await createClient()
@@ -21,7 +22,7 @@ export default async function DividendsPage() {
           <div className="h2">Dividend tracker</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div className="pill">● All accounts synced</div>
+          <MarketStatusPill />
           <div className="avatar">{(user.email ?? 'U').charAt(0).toUpperCase()}</div>
         </div>
       </div>
