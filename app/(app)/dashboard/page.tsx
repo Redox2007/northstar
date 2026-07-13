@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Account, Holding, Property, Debt, FireSettings } from '@/types'
 import { computeFinancials } from '@/lib/financial-engine'
+import { Suspense } from 'react'
 import { MarketStatusPill } from '@/components/MarketStatusPill'
 
 function fmt(n: number) {
@@ -105,9 +106,8 @@ export default async function DashboardPage() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <Suspense fallback={<div className="pill">● Loading...</div>}>
-            <Suspense fallback={<div className="pill">● Loading...</div>}>
-  <MarketStatusPill />
-</Suspense>
+              <MarketStatusPill />
+            </Suspense>
           </Suspense>
           <div className="avatar">{userName.charAt(0).toUpperCase()}</div>
         </div>

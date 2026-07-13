@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { Account, Holding, Property, Debt } from '@/types'
 import { computeFinancials } from '@/lib/financial-engine'
 import AccountsClient from './AccountsClient'
+import { Suspense } from 'react'
 import { MarketStatusPill } from '@/components/MarketStatusPill'
 
 export default async function AccountsPage() {
@@ -51,9 +52,8 @@ export default async function AccountsPage() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <Suspense fallback={<div className="pill">● Loading...</div>}>
-            <Suspense fallback={<div className="pill">● Loading...</div>}>
-  <MarketStatusPill />
-</Suspense>
+              <MarketStatusPill />
+            </Suspense>
           </Suspense>
           <div className="avatar">{(user.email ?? 'U').charAt(0).toUpperCase()}</div>
         </div>

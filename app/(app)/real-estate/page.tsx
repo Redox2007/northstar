@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Property } from '@/types'
 import RealEstateClient from './RealEstateClient'
+import { Suspense } from 'react'
 import { MarketStatusPill } from '@/components/MarketStatusPill'
 
 export default async function RealEstatePage() {

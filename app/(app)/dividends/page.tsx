@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Account, Holding } from '@/types'
 import DividendsClient from './DividendsClient'
+import { Suspense } from 'react'
 import { MarketStatusPill } from '@/components/MarketStatusPill'
 
 export default async function DividendsPage() {
@@ -23,9 +24,8 @@ export default async function DividendsPage() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <Suspense fallback={<div className="pill">● Loading...</div>}>
-            <Suspense fallback={<div className="pill">● Loading...</div>}>
-  <MarketStatusPill />
-</Suspense>
+              <MarketStatusPill />
+            </Suspense>
           </Suspense>
           <div className="avatar">{(user.email ?? 'U').charAt(0).toUpperCase()}</div>
         </div>

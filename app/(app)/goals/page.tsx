@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Account, Holding, Property, Debt, FireSettings } from '@/types'
 import { computeFinancials } from '@/lib/financial-engine'
+import { Suspense } from 'react'
 import { MarketStatusPill } from '@/components/MarketStatusPill'
 
 function fmt(n: number) {

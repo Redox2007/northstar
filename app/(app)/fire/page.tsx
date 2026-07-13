@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { Account, FireSettings, Holding, Property, Debt } from '@/types'
 import { computeFinancials } from '@/lib/financial-engine'
 import FireClient from './FireClient'
+import { Suspense } from 'react'
 import { MarketStatusPill } from '@/components/MarketStatusPill'
 
 export default async function FirePage() {

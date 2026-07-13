@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Debt } from '@/types'
 import DebtClient from './DebtClient'
+import { Suspense } from 'react'
 import { MarketStatusPill } from '@/components/MarketStatusPill'
 
 export default async function DebtPage() {
@@ -21,9 +22,8 @@ export default async function DebtPage() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <Suspense fallback={<div className="pill">● Loading...</div>}>
-            <Suspense fallback={<div className="pill">● Loading...</div>}>
-  <MarketStatusPill />
-</Suspense>
+              <MarketStatusPill />
+            </Suspense>
           </Suspense>
           <div className="avatar">{(user.email ?? 'U').charAt(0).toUpperCase()}</div>
         </div>
