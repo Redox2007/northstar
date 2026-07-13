@@ -4,7 +4,7 @@
  * Can also be triggered manually: GET /api/cron/refresh-market-data?secret=YOUR_CRON_SECRET
  *
  * Flow:
- *   Authorize → create refresh-log row → fetch tickers → FMP batch quotes
+ *   Authorize → create refresh-log row → fetch tickers → Twelve Data batch quotes
  *   → validate & update prices → reload data → computeFinancials
  *   → upsert daily snapshot → mark log success/partial/failed
  */
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createAdminClient()
-  const apiKey   = process.env.FMP_API_KEY!
+  const apiKey   = process.env.TWELVE_DATA_API_KEY!
 
   // ── 2. Create refresh-log row ─────────────────────────────────────────────
   const { data: runRow, error: runErr } = await supabase
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
         symbols_requested: allTickers.length,
         error_message:  fetchErr instanceof Error ? fetchErr.message : String(fetchErr),
       }).eq('id', runId)
-      return NextResponse.json({ error: 'FMP fetch failed', detail: String(fetchErr) }, { status: 502 })
+      return NextResponse.json({ error: 'Market data fetch failed', detail: String(fetchErr) }, { status: 502 })
     }
 
     const quoteMap = new Map(quotes.map(q => [q.ticker, q.price]))

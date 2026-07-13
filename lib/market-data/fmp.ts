@@ -1,39 +1,24 @@
 /**
- * Financial Modeling Prep (FMP) market data client.
- * Docs: https://financialmodelingprep.com/developer/docs
+ * Twelve Data market data client.
+ * Docs: https://twelvedata.com/docs
  *
- * Free tier: ~250 requests/day — more than enough for a nightly batch job.
- * Batch endpoint: /api/v3/quote/AAPL,MSFT,VXUS — one request for all tickers.
+ * Free tier: 800 API credits/day — plenty for a nightly batch job.
+ * Batch endpoint: /price?symbol=AAPL,MSFT,VXUS — one request for all tickers.
+ *
+ * Response format:
+ *   Single ticker:   { "price": "189.30" }
+ *   Multiple tickers: { "AAPL": { "price": "189.30" }, "MSFT": { "price": "378.91" } }
  */
 
-export interface FMPQuote {
-  symbol:            string
-  name:              string
-  price:             number
-  changesPercentage: number
-  change:            number
-  dayLow:            number
-  dayHigh:           number
-  yearHigh:          number
-  yearLow:           number
-  marketCap:         number | null
-  volume:            number
-  avgVolume:         number
-  exchange:          string
-  eps:               number | null
-  pe:                number | null
-  timestamp:         number
-}
-
 export interface QuoteResult {
-  ticker:  string
-  price:   number   // validated price per share > 0
+  ticker: string
+  price:  number   // validated price per share > 0
 }
 
 /**
  * Fetch quotes for multiple tickers in a single API call.
  * Returns only tickers with valid prices (price > 0).
- * Tickers not found or returned with invalid prices are silently omitted
+ * Tickers not found or returned with invalid prices are omitted
  * so the caller can add them to failed_symbols.
  */
 export async function fetchBatchQuotes(
@@ -43,7 +28,7 @@ export async function fetchBatchQuotes(
   if (tickers.length === 0) return []
 
   const symbols = tickers.map(t => t.toUpperCase()).join(',')
-  const url = `https://financialmodelingprep.com/api/v3/quote/${symbols}?apikey=${apiKey}`
+  const url = `https://api.twelvedata.com/price?symbol=${symbols}&apikey=${apiKey}`
 
   const res = await fetch(url, {
     cache: 'no-store',
@@ -51,18 +36,34 @@ export async function fetchBatchQuotes(
   })
 
   if (!res.ok) {
-    throw new Error(`FMP API error: ${res.status} ${res.statusText}`)
+    throw new Error(`Twelve Data API error: ${res.status} ${res.statusText}`)
   }
 
   const data: unknown = await res.json()
 
-  // FMP returns an error object (not array) when the key is invalid or rate-limited
-  if (!Array.isArray(data)) {
-    const msg = (data as { 'Error Message'?: string })?.['Error Message']
-    throw new Error(msg ?? 'FMP returned unexpected response format')
+  if (!data || typeof data !== 'object') {
+    throw new Error('Twelve Data returned unexpected response format')
   }
 
-  return (data as FMPQuote[])
-    .filter(q => q.symbol && typeof q.price === 'number' && q.price > 0)
-    .map(q => ({ ticker: q.symbol.toUpperCase(), price: q.price }))
+  const results: QuoteResult[] = []
+
+  if (tickers.length === 1) {
+    // Single ticker response: { "price": "189.30" } or { "code": 400, "message": "..." }
+    const single = data as { price?: string; code?: number; message?: string }
+    if (single.code && single.code !== 200) {
+      throw new Error(single.message ?? 'Twelve Data error')
+    }
+    const price = parseFloat(single.price ?? '')
+    if (price > 0) results.push({ ticker: tickers[0].toUpperCase(), price })
+  } else {
+    // Multi-ticker response: { "AAPL": { "price": "189.30" }, ... }
+    const multi = data as Record<string, { price?: string; code?: number; message?: string }>
+    for (const [symbol, quote] of Object.entries(multi)) {
+      if (quote.code && quote.code !== 200) continue  // ticker not found — skip
+      const price = parseFloat(quote.price ?? '')
+      if (price > 0) results.push({ ticker: symbol.toUpperCase(), price })
+    }
+  }
+
+  return results
 }
