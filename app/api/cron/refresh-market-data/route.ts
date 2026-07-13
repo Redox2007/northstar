@@ -16,7 +16,7 @@ import { computeFinancials } from '@/lib/financial-engine'
 import { Account, Holding, Property, Debt, FireSettings } from '@/types'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60   // Vercel Pro: up to 300s; Hobby: up to 60s
+export const maxDuration = 300  // Vercel Pro: up to 300s; Hobby: up to 60s
 
 export async function GET(request: NextRequest) {
   // ── 1. Authorize ──────────────────────────────────────────────────────────
