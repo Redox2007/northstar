@@ -44,7 +44,9 @@ export default async function FirePage() {
           <div className="h2">FIRE calculator</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <MarketStatusPill />
+          <Suspense fallback={<div className="pill">● Loading...</div>}>
+  <MarketStatusPill />
+</Suspense>
           <div className="avatar">{(user.email ?? 'U').charAt(0).toUpperCase()}</div>
         </div>
       </div>

@@ -20,7 +20,9 @@ export default async function RealEstatePage() {
           <div className="h2">Real estate</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <MarketStatusPill />
+          <Suspense fallback={<div className="pill">● Loading...</div>}>
+  <MarketStatusPill />
+</Suspense>
           <div className="avatar">{(user.email ?? 'U').charAt(0).toUpperCase()}</div>
         </div>
       </div>

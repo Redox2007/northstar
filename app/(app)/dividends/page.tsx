@@ -22,7 +22,11 @@ export default async function DividendsPage() {
           <div className="h2">Dividend tracker</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <MarketStatusPill />
+          <Suspense fallback={<div className="pill">● Loading...</div>}>
+            <Suspense fallback={<div className="pill">● Loading...</div>}>
+  <MarketStatusPill />
+</Suspense>
+          </Suspense>
           <div className="avatar">{(user.email ?? 'U').charAt(0).toUpperCase()}</div>
         </div>
       </div>
