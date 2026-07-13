@@ -26,7 +26,6 @@ export default async function DividendsPage() {
           <Suspense fallback={<div className="pill">● Loading...</div>}>
               <MarketStatusPill />
             </Suspense>
-          </Suspense>
           <div className="avatar">{(user.email ?? 'U').charAt(0).toUpperCase()}</div>
         </div>
       </div>

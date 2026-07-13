@@ -108,7 +108,6 @@ export default async function DashboardPage() {
           <Suspense fallback={<div className="pill">● Loading...</div>}>
               <MarketStatusPill />
             </Suspense>
-          </Suspense>
           <div className="avatar">{userName.charAt(0).toUpperCase()}</div>
         </div>
       </div>
