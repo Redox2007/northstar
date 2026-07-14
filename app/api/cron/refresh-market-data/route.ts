@@ -61,14 +61,17 @@ export async function GET(request: NextRequest) {
       (userRows ?? []).map((r: { user_id: string }) => r.user_id).filter(Boolean)
     )]
 
-    // ── 4. Collect all unique tickers across all users ──────────────────────
-    const { data: allHoldings } = await supabase
+    // ── 4. Collect all holdings (id + ticker + current price) ──────────────
+    const { data: allHoldingRows } = await supabase
       .from('holdings')
-      .select('ticker')
+      .select('id, ticker, current_value')
+
+    type HoldingRow = { id: string; ticker: string | null; current_value: number }
+    const holdingRows = (allHoldingRows ?? []) as HoldingRow[]
 
     const allTickers = [...new Set(
-      (allHoldings ?? [])
-        .map((h: { ticker: string | null }) => h.ticker?.toUpperCase())
+      holdingRows
+        .map(h => h.ticker?.toUpperCase())
         .filter((t): t is string => !!t)
     )]
 
@@ -91,21 +94,25 @@ export async function GET(request: NextRequest) {
     // Tickers FMP returned no valid price for
     const failedSymbols = allTickers.filter(t => !quoteMap.has(t))
 
-    // ── 6. Update holdings prices ──────────────────────────────────────────
+    // ── 6. Update holdings prices (per-row, capturing prior_close) ──────────
     const updatedAt = new Date().toISOString()
-    let symbolsUpdated = 0
+    const updatedTickers = new Set<string>()
 
-    for (const ticker of allTickers) {
+    for (const row of holdingRows) {
+      const ticker = row.ticker?.toUpperCase()
+      if (!ticker) continue
       const price = quoteMap.get(ticker)
       if (!price) continue   // leave existing price untouched — never write 0 or null
 
       const { error: updateErr } = await supabase
         .from('holdings')
-        .update({ current_value: price, price_updated_at: updatedAt })
-        .eq('ticker', ticker)   // updates across all users who hold this ticker
+        .update({ prior_close: row.current_value, current_value: price, price_updated_at: updatedAt })
+        .eq('id', row.id)   // per-row, so each holding's own prior price is captured
 
-      if (!updateErr) symbolsUpdated++
+      if (!updateErr) updatedTickers.add(ticker)
     }
+
+    const symbolsUpdated = updatedTickers.size
 
     // ── 7. Compute financials & upsert snapshot for each user ───────────────
     const today = new Date().toISOString().split('T')[0]

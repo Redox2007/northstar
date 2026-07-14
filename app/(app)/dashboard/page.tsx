@@ -81,6 +81,25 @@ export default async function DashboardPage() {
     reachedDate: snapshotRows.find(s => s[t.field] >= t.threshold)?.snapshot_date ?? null,
   }))
 
+  // ── Portfolio change (today / month / YTD), derived from snapshotRows ──
+  const latestSnap   = snapshotRows[snapshotRows.length - 1] ?? null
+  const previousSnap = snapshotRows.length >= 2 ? snapshotRows[snapshotRows.length - 2] : null
+  const todayChange  = latestSnap && previousSnap ? latestSnap.net_worth - previousSnap.net_worth : null
+
+  const now = new Date()
+  const monthStartStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  const yearStartStr  = `${now.getFullYear()}-01-01`
+
+  const earliestThisMonth = snapshotRows.find(s => s.snapshot_date >= monthStartStr) ?? null
+  const monthChange = latestSnap && earliestThisMonth && earliestThisMonth.snapshot_date < latestSnap.snapshot_date
+    ? latestSnap.net_worth - earliestThisMonth.net_worth : null
+
+  const earliestYTD = snapshotRows.find(s => s.snapshot_date >= yearStartStr) ?? null
+  const ytdChange = latestSnap && earliestYTD && earliestYTD.snapshot_date < latestSnap.snapshot_date
+    ? latestSnap.net_worth - earliestYTD.net_worth : null
+
+  const hasPortfolioHistory = snapshotRows.length >= 2
+
   // ── Dashboard buckets ──
   const buckets = [
     { code: 'RA', label: 'Retirement Assets',   value: e.retirementTotal, negCls: '' },
@@ -202,14 +221,29 @@ export default async function DashboardPage() {
           </div>
 
           <div className="card">
-            <div className="klabel">Real estate cash flow</div>
-            <div className="head grn" style={{ fontSize: 30, margin: '6px 0 4px' }}>
-              {e.rentalCF >= 0 ? '+' : '−'}{fmt(Math.abs(e.rentalCF))}<span className="mut" style={{ fontSize: 15 }}>/mo</span>
-            </div>
-            <div className="track" style={{ margin: '10px 0 8px' }}>
-              <div className="fillgrn" style={{ width: `${Math.min(100, e.reCoC * 10)}%` }} />
-            </div>
-            <div className="subtle">{e.reCoC.toFixed(1)}% cash-on-cash · {fmt(e.reEquity)} equity</div>
+            <div className="klabel">Portfolio change</div>
+            {hasPortfolioHistory ? (
+              <div style={{ marginTop: 10 }}>
+                {[
+                  { label: 'Today',      value: todayChange },
+                  { label: 'This month', value: monthChange },
+                  { label: 'YTD',        value: ytdChange },
+                ].map(row => (
+                  <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '7px 0' }}>
+                    <span className="subtle">{row.label}</span>
+                    {row.value === null ? (
+                      <span className="mut" style={{ fontSize: 12.5 }}>Not enough history yet</span>
+                    ) : (
+                      <span className={row.value >= 0 ? 'grn' : 'acc'} style={{ fontWeight: 700, fontSize: 16 }}>
+                        {row.value >= 0 ? '+' : '−'}{fmt(Math.abs(row.value))}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="subtle" style={{ marginTop: 10 }}>Building history — check back tomorrow to see day-over-day changes.</p>
+            )}
           </div>
         </div>
 

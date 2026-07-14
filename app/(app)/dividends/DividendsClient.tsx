@@ -126,15 +126,16 @@ export default function DividendsClient({ holdings: initial, accounts, userId }:
         ) : (
           <table className="tbl" style={{ tableLayout: 'fixed', width: '100%' }}>
             <colgroup>
-              <col style={{ width: '27%' }} />
+              <col style={{ width: '24%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '10%' }} />
               <col style={{ width: '9%' }} />
               <col style={{ width: '11%' }} />
+              <col style={{ width: '12%' }} />
               <col style={{ width: '10%' }} />
-              <col style={{ width: '12%' }} />
-              <col style={{ width: '12%' }} />
-              <col style={{ width: '7%' }} />
               <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
+              <col style={{ width: '5%' }} />
+              <col style={{ width: '5%' }} />
             </colgroup>
             <thead>
               <tr>
@@ -143,6 +144,7 @@ export default function DividendsClient({ holdings: initial, accounts, userId }:
                 <th className="rt">Cost basis</th>
                 <th className="rt">Price</th>
                 <th className="rt">Value</th>
+                <th className="rt">Gain</th>
                 <th className="rt">Annual divs</th>
                 <th className="rt">YOC</th>
                 <th className="rt">DRIP</th>
@@ -150,7 +152,10 @@ export default function DividendsClient({ holdings: initial, accounts, userId }:
               </tr>
             </thead>
             <tbody>
-              {holdings.map(h => (
+              {holdings.map(h => {
+                const gainDollar = h.shares * (h.current_value - h.cost_basis)
+                const gainPct    = h.cost_basis > 0 ? (h.current_value - h.cost_basis) / h.cost_basis * 100 : 0
+                return (
                 <tr key={h.id}>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
@@ -173,8 +178,26 @@ export default function DividendsClient({ holdings: initial, accounts, userId }:
                   </td>
                   <td className="rt">{h.shares.toLocaleString()}</td>
                   <td className="rt">{fmt(h.shares * h.cost_basis)}</td>
-                  <td className="rt">{fmtPrice(h.current_value)}</td>
+                  <td className="rt">
+                    {fmtPrice(h.current_value)}
+                    {h.prior_close > 0 && (() => {
+                      const chgPct = (h.current_value - h.prior_close) / h.prior_close * 100
+                      return (
+                        <div className={chgPct >= 0 ? 'grn' : 'acc'} style={{ fontSize: 11, fontWeight: 600, marginTop: 2 }}>
+                          {chgPct >= 0 ? '+' : '−'}{Math.abs(chgPct).toFixed(2)}%
+                        </div>
+                      )
+                    })()}
+                  </td>
                   <td className="rt" style={{ fontWeight: 600 }}>{fmt(h.shares * h.current_value)}</td>
+                  <td className="rt">
+                    <div style={{ fontWeight: 700 }} className={gainDollar >= 0 ? 'grn' : 'acc'}>
+                      {gainDollar >= 0 ? '+' : '−'}{fmt(Math.abs(gainDollar))}
+                    </div>
+                    <div className="subtle" style={{ marginTop: 2 }}>
+                      {gainPct >= 0 ? '+' : '−'}{Math.abs(gainPct).toFixed(1)}%
+                    </div>
+                  </td>
                   <td className="rt acc" style={{ fontWeight: 700 }}>
                     {fmt(h.shares * h.annual_dividends)}
                     {h.current_value > 0 && (h.annual_dividends / h.current_value) > 0.5 && (
@@ -198,7 +221,8 @@ export default function DividendsClient({ holdings: initial, accounts, userId }:
                     </div>
                   </td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
         )}

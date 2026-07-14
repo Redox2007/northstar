@@ -20,6 +20,7 @@ export type Holding = {
   shares: number
   cost_basis: number
   current_value: number
+  prior_close: number
   annual_dividends: number
   yield_on_cost: number
   drip: boolean
