@@ -1,9 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Account, Holding, Property, Debt, FireSettings } from '@/types'
+import { Account, Holding, Property, Debt, FireSettings, PortfolioSnapshot } from '@/types'
 import { computeFinancials } from '@/lib/financial-engine'
 import { Suspense } from 'react'
 import { MarketStatusPill } from '@/components/MarketStatusPill'
+import HistoryCharts from '@/components/HistoryCharts'
 
 function fmt(n: number) {
   const neg = n < 0
@@ -21,13 +22,21 @@ export default async function DashboardPage() {
     { data: properties },
     { data: debts },
     { data: fireRow },
+    { data: snapshots },
   ] = await Promise.all([
     supabase.from('accounts').select('*').eq('user_id', user.id),
     supabase.from('holdings').select('*').eq('user_id', user.id),
     supabase.from('properties').select('*').eq('user_id', user.id),
     supabase.from('debts').select('*').eq('user_id', user.id),
     supabase.from('fire_settings').select('*').eq('user_id', user.id).single(),
+    supabase
+      .from('portfolio_snapshots')
+      .select('snapshot_date, net_worth, invested_assets, retirement_total, taxable_total, real_estate_equity, consumer_debt, passive_annual, dividend_income_annual, rental_cash_flow_monthly, insurance_total, liquidity_total, freedom_score')
+      .eq('user_id', user.id)
+      .order('snapshot_date', { ascending: true }),
   ])
+
+  const snapshotRows = (snapshots as PortfolioSnapshot[]) ?? []
 
   const fire = fireRow as FireSettings | null
 
@@ -60,6 +69,17 @@ export default async function DashboardPage() {
     { name: '$500k invested', pct: Math.min(100, Math.round(totalInvested / 500_000 * 100)), done: totalInvested >= 500_000 },
     { name: '$1M net worth',  pct: Math.min(100, Math.round(e.netWorth      / 1_000_000 * 100)), done: e.netWorth >= 1_000_000 },
   ]
+
+  // ── Milestone history (first tracked snapshot date each threshold was crossed) ──
+  const milestoneThresholds = [
+    { name: '$300k invested', field: 'invested_assets' as const, threshold: 300_000 },
+    { name: '$500k invested', field: 'invested_assets' as const, threshold: 500_000 },
+    { name: '$1M net worth',  field: 'net_worth'       as const, threshold: 1_000_000 },
+  ]
+  const milestoneHistory = milestoneThresholds.map(t => ({
+    name: t.name,
+    reachedDate: snapshotRows.find(s => s[t.field] >= t.threshold)?.snapshot_date ?? null,
+  }))
 
   // ── Dashboard buckets ──
   const buckets = [
@@ -201,13 +221,19 @@ export default async function DashboardPage() {
               <span className="chip">{milestones.filter(m => m.done).length} of {milestones.length} reached</span>
             </div>
 
-            {milestones.filter(m => m.done).map(m => (
-              <div className="mile" key={m.name} style={{ paddingTop: 0 }}>
-                <span className="miletick done">✓</span>
-                <span style={{ fontWeight: 600, fontSize: 14, flex: 1 }}>{m.name}</span>
-                <span className="subtle">Reached</span>
-              </div>
-            ))}
+            {milestones.filter(m => m.done).map(m => {
+              const hist = milestoneHistory.find(h => h.name === m.name)
+              const dateLabel = hist?.reachedDate
+                ? new Date(hist.reachedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : null
+              return (
+                <div className="mile" key={m.name} style={{ paddingTop: 0 }}>
+                  <span className="miletick done">✓</span>
+                  <span style={{ fontWeight: 600, fontSize: 14, flex: 1 }}>{m.name}</span>
+                  <span className="subtle">{dateLabel ? `Reached ${dateLabel}` : 'Reached'}</span>
+                </div>
+              )
+            })}
 
             {milestones.filter(m => !m.done).slice(0, 2).map((m, idx, arr) => (
               <div className="mile" key={m.name} style={idx === arr.length - 1 ? { borderBottom: 'none' } : {}}>
@@ -239,6 +265,11 @@ export default async function DashboardPage() {
               <div style={{ fontWeight: 700, fontSize: 16 }}>{fmt(e.netWorth)}</div>
             </div>
           </div>
+        </div>
+
+        {/* Row 4 — Historical charts */}
+        <div style={{ marginTop: 18 }}>
+          <HistoryCharts snapshots={snapshotRows} />
         </div>
       </div>
     </>

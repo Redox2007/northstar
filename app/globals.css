@@ -171,6 +171,7 @@ body {
   cursor: pointer; text-align: center; font-family: 'Work Sans', sans-serif; transition: .15s;
 }
 .segbtn:hover { border-color: var(--accent); color: var(--accent); }
+.segbtn.on { background: var(--accent); color: #fff; border-color: var(--accent); }
 .bignum {
   font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700;
   letter-spacing: -1.5px; font-size: 40px; line-height: 1;

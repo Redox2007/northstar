@@ -79,6 +79,23 @@ export type FireSettings = {
   updated_at: string
 }
 
+export type PortfolioSnapshot = {
+  user_id: string
+  snapshot_date: string  // 'YYYY-MM-DD'
+  net_worth: number
+  invested_assets: number
+  retirement_total: number
+  taxable_total: number
+  real_estate_equity: number
+  consumer_debt: number
+  passive_annual: number
+  dividend_income_annual: number
+  rental_cash_flow_monthly: number
+  insurance_total: number
+  liquidity_total: number
+  freedom_score: number
+}
+
 // ── Insert types (omit server-generated fields) ──
 export type AccountInsert = Omit<Account, 'id' | 'user_id' | 'created_at'>
 export type HoldingInsert = Omit<Holding, 'id' | 'user_id' | 'created_at'>
