@@ -213,7 +213,12 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Row 3 — Milestones + Where your money lives */}
+        {/* Row 3 — Historical charts */}
+        <div style={{ marginBottom: 18 }}>
+          <HistoryCharts snapshots={snapshotRows} />
+        </div>
+
+        {/* Row 4 — Milestones + Where your money lives */}
         <div className="grid2">
           <div className="card">
             <div className="rowbtwn" style={{ marginBottom: 16 }}>
@@ -265,11 +270,6 @@ export default async function DashboardPage() {
               <div style={{ fontWeight: 700, fontSize: 16 }}>{fmt(e.netWorth)}</div>
             </div>
           </div>
-        </div>
-
-        {/* Row 4 — Historical charts */}
-        <div style={{ marginTop: 18 }}>
-          <HistoryCharts snapshots={snapshotRows} />
         </div>
       </div>
     </>
