@@ -21,6 +21,10 @@ function fmt(n: number) {
   return '$' + Math.abs(Math.round(n)).toLocaleString('en-US')
 }
 
+function fmtPrice(n: number) {
+  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 type AccountOption = { id: string; name: string; category: string }
 type Props = { holdings: Holding[]; accounts: AccountOption[]; userId: string }
 
@@ -120,13 +124,14 @@ export default function DividendsClient({ holdings: initial, accounts, userId }:
         ) : (
           <table className="tbl" style={{ tableLayout: 'fixed', width: '100%' }}>
             <colgroup>
-              <col style={{ width: '30%' }} />
+              <col style={{ width: '27%' }} />
+              <col style={{ width: '9%' }} />
+              <col style={{ width: '11%' }} />
               <col style={{ width: '10%' }} />
-              <col style={{ width: '13%' }} />
-              <col style={{ width: '13%' }} />
-              <col style={{ width: '13%' }} />
-              <col style={{ width: '8%' }} />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '12%' }} />
               <col style={{ width: '7%' }} />
+              <col style={{ width: '6%' }} />
               <col style={{ width: '6%' }} />
             </colgroup>
             <thead>
@@ -134,6 +139,7 @@ export default function DividendsClient({ holdings: initial, accounts, userId }:
                 <th>Ticker</th>
                 <th className="rt">Shares</th>
                 <th className="rt">Cost basis</th>
+                <th className="rt">Price</th>
                 <th className="rt">Value</th>
                 <th className="rt">Annual divs</th>
                 <th className="rt">YOC</th>
@@ -165,6 +171,7 @@ export default function DividendsClient({ holdings: initial, accounts, userId }:
                   </td>
                   <td className="rt">{h.shares.toLocaleString()}</td>
                   <td className="rt">{fmt(h.shares * h.cost_basis)}</td>
+                  <td className="rt">{fmtPrice(h.current_value)}</td>
                   <td className="rt" style={{ fontWeight: 600 }}>{fmt(h.shares * h.current_value)}</td>
                   <td className="rt acc" style={{ fontWeight: 700 }}>
                     {fmt(h.shares * h.annual_dividends)}
