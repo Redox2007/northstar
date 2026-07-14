@@ -123,6 +123,10 @@ All tables have Row Level Security enabled — users can only read and write the
 
 ## Known Limitations / Roadmap
 
+See [ROADMAP.md](./ROADMAP.md) for the planned Phase 3-7 feature roadmap
+(net worth attribution, dividend calendar, real estate deal analysis, an
+AI financial advisor layer, and more).
+
 - **Mortgage in two places** — `Property.mortgage_balance` and a matching `Debt` record can get out of sync. Future: link properties to debt records via `mortgage_debt_id`
 - **`current_value` naming** — This field stores price per share, but the name implies a total. Future: rename to `current_price` with a DB migration
 - **No market data sync** — Prices and dividends must be updated manually. Future: integrate a market data API
