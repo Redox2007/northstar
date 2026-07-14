@@ -14,7 +14,6 @@ const FIELDS: FieldDef[] = [
   { key: 'cost_basis',       label: 'Cost per share ($)',             placeholder: '0', type: 'number', step: '0.01' },
   { key: 'current_value',    label: 'Current price per share ($)',    placeholder: '0', type: 'number', step: '0.01' },
   { key: 'annual_dividends', label: 'Annual dividend per share ($)',  placeholder: '0', type: 'number', step: '0.0001' },
-  { key: 'yield_on_cost',    label: 'Yield on cost (%)',              placeholder: '0', type: 'number', step: '0.01' },
 ]
 
 function fmt(n: number) {
@@ -45,7 +44,7 @@ export default function DividendsClient({ holdings: initial, accounts, userId }:
   const dripCount  = holdings.filter(h => h.drip).length
 
   function openAdd() {
-    setForm({ ticker: '', name: '', shares: '', cost_basis: '', current_value: '', annual_dividends: '', yield_on_cost: '' })
+    setForm({ ticker: '', name: '', shares: '', cost_basis: '', current_value: '', annual_dividends: '' })
     setLinkedAccountId('')
     setModal({ mode: 'add' })
   }
@@ -54,7 +53,7 @@ export default function DividendsClient({ holdings: initial, accounts, userId }:
     setForm({
       ticker: h.ticker, name: h.name, shares: String(h.shares),
       cost_basis: String(h.cost_basis), current_value: String(h.current_value),
-      annual_dividends: String(h.annual_dividends), yield_on_cost: String(h.yield_on_cost),
+      annual_dividends: String(h.annual_dividends),
     })
     setLinkedAccountId(h.account_id ?? '')
     setModal({ mode: 'edit', holding: h })
@@ -63,11 +62,14 @@ export default function DividendsClient({ holdings: initial, accounts, userId }:
   async function handleSave() {
     setSaving(true)
     const n = (k: string) => parseFloat(form[k]) || 0
+    const costBasis = n('cost_basis')
+    const annualDividends = n('annual_dividends')
     const entry = {
       ticker: (form.ticker || 'NEW').toUpperCase(),
       name: form.name || '—',
-      shares: n('shares'), cost_basis: n('cost_basis'), current_value: n('current_value'),
-      annual_dividends: n('annual_dividends'), yield_on_cost: n('yield_on_cost'),
+      shares: n('shares'), cost_basis: costBasis, current_value: n('current_value'),
+      annual_dividends: annualDividends,
+      yield_on_cost: costBasis > 0 ? (annualDividends / costBasis) * 100 : 0,
       drip: modal?.mode === 'edit' ? (modal.holding?.drip ?? false) : false,
       account_id: linkedAccountId || null,
       user_id: userId,
@@ -179,7 +181,7 @@ export default function DividendsClient({ holdings: initial, accounts, userId }:
                       <span title="Implied yield > 50% — verify annual dividend is entered per share, not as a total" style={{ marginLeft: 4, cursor: 'help', color: '#c0612b' }}>⚠</span>
                     )}
                   </td>
-                  <td className="rt">{h.yield_on_cost.toFixed(1)}%</td>
+                  <td className="rt">{(h.cost_basis > 0 ? (h.annual_dividends / h.cost_basis) * 100 : 0).toFixed(1)}%</td>
                   <td className="rt">
                     <div
                       className={`toggle${h.drip ? ' on' : ''}`}
