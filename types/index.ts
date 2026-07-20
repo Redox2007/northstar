@@ -11,6 +11,8 @@ export type Account = {
   created_at: string
 }
 
+export type AssetClass = 'us_stock' | 'international_stock' | 'bond' | 'cash' | 'other'
+
 export type Holding = {
   id: string
   user_id: string
@@ -21,6 +23,7 @@ export type Holding = {
   cost_basis: number
   current_value: number
   prior_close: number
+  asset_class: AssetClass
   annual_dividends: number
   yield_on_cost: number
   drip: boolean
@@ -97,6 +100,18 @@ export type PortfolioSnapshot = {
   freedom_score: number
 }
 
+export type AllocationTargets = {
+  id: string
+  user_id: string
+  us_stock_pct: number
+  international_pct: number
+  bond_pct: number
+  cash_pct: number
+  real_estate_pct: number
+  insurance_pct: number
+  updated_at: string
+}
+
 // ── Insert types (omit server-generated fields) ──
 export type AccountInsert = Omit<Account, 'id' | 'user_id' | 'created_at'>
 export type HoldingInsert = Omit<Holding, 'id' | 'user_id' | 'created_at'>
@@ -104,3 +119,4 @@ export type PropertyInsert = Omit<Property, 'id' | 'user_id' | 'created_at'>
 export type DebtInsert = Omit<Debt, 'id' | 'user_id' | 'created_at'>
 export type GoalInsert = Omit<Goal, 'id' | 'user_id' | 'created_at'>
 export type FireSettingsInsert = Omit<FireSettings, 'id' | 'user_id' | 'updated_at'>
+export type AllocationTargetsInsert = Omit<AllocationTargets, 'id' | 'user_id' | 'updated_at'>

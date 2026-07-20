@@ -8,6 +8,7 @@ const NAV = [
   { href: '/dashboard',   label: 'Dashboard' },
   { href: '/accounts',    label: 'Accounts' },
   { href: '/dividends',   label: 'Dividends' },
+  { href: '/allocation',  label: 'Allocation' },
   { href: '/real-estate', label: 'Real Estate' },
   { href: '/debt',        label: 'Debt' },
   { href: '/fire',        label: 'FIRE Calculator' },

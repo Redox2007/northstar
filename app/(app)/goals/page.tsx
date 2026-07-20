@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Account, Holding, Property, Debt, FireSettings } from '@/types'
 import { computeFinancials } from '@/lib/financial-engine'
+import { computeGoalForecasts } from '@/lib/goal-forecast'
 import { Suspense } from 'react'
 import { MarketStatusPill } from '@/components/MarketStatusPill'
 
@@ -41,6 +42,7 @@ export default async function GoalsPage() {
   const { netWorth, totalInvested, passiveAnnual, freedomScore } = e
   const passiveGoal = 75000
   const salaryGoal  = 95000
+  const goalForecasts = computeGoalForecasts(totalInvested, netWorth, fire)
 
   const goals = [
     {
@@ -109,23 +111,36 @@ export default async function GoalsPage() {
       <div className="body">
         {/* grid3 layout matching new design */}
         <div className="grid3">
-          {goals.map(g => (
-            <div className="card" key={g.name}>
-              <div className="rowbtwn" style={{ marginBottom: 14 }}>
-                <span className={`miletick${g.done ? ' done' : ''}`}>{g.tick}</span>
-                <span className={`chip${g.done ? ' solid' : ''}`}>{g.status}</span>
+          {goals.map(g => {
+            const forecast = goalForecasts.find(f => f.name === g.name)
+            return (
+              <div className="card" key={g.name}>
+                <div className="rowbtwn" style={{ marginBottom: 14 }}>
+                  <span className={`miletick${g.done ? ' done' : ''}`}>{g.tick}</span>
+                  <span className={`chip${g.done ? ' solid' : ''}`}>{g.status}</span>
+                </div>
+                <div className="cardtitle" style={{ fontSize: 18 }}>{g.name}</div>
+                <div className="subtle" style={{ margin: '6px 0 16px' }}>{g.sub}</div>
+                <div className="track">
+                  <div className={g.fillCls} style={{ width: g.pctStr }} />
+                </div>
+                <div className="rowbtwn" style={{ marginTop: 9 }}>
+                  <span className="subtle">Progress</span>
+                  <span style={{ fontWeight: 700, fontSize: 14 }}>{g.pctStr}</span>
+                </div>
+                {!g.done && forecast && (
+                  <div style={{ marginTop: 12, borderTop: '1px solid #f1e7d8', paddingTop: 10 }}>
+                    {[['Expected', forecast.expected], ['Likely', forecast.likely], ['Aggressive', forecast.aggressive]].map(([label, val]) => (
+                      <div key={label} className="rowbtwn" style={{ padding: '3px 0' }}>
+                        <span className="subtle">{label}</span>
+                        <span style={{ fontWeight: 600, fontSize: 12.5 }}>{val}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="cardtitle" style={{ fontSize: 18 }}>{g.name}</div>
-              <div className="subtle" style={{ margin: '6px 0 16px' }}>{g.sub}</div>
-              <div className="track">
-                <div className={g.fillCls} style={{ width: g.pctStr }} />
-              </div>
-              <div className="rowbtwn" style={{ marginTop: 9 }}>
-                <span className="subtle">Progress</span>
-                <span style={{ fontWeight: 700, fontSize: 14 }}>{g.pctStr}</span>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </>

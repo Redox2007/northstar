@@ -2,9 +2,12 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Account, Holding, Property, Debt, FireSettings, PortfolioSnapshot } from '@/types'
 import { computeFinancials } from '@/lib/financial-engine'
+import { computeGoalForecasts } from '@/lib/goal-forecast'
 import { Suspense } from 'react'
 import { MarketStatusPill } from '@/components/MarketStatusPill'
 import HistoryCharts from '@/components/HistoryCharts'
+import NetWorthAttribution from '@/components/NetWorthAttribution'
+import MarketSummary from '@/components/MarketSummary'
 
 function fmt(n: number) {
   const neg = n < 0
@@ -81,6 +84,8 @@ export default async function DashboardPage() {
     reachedDate: snapshotRows.find(s => s[t.field] >= t.threshold)?.snapshot_date ?? null,
   }))
 
+  const goalForecasts = computeGoalForecasts(totalInvested, e.netWorth, fire)
+
   // ── Portfolio change (today / month / YTD), derived from snapshotRows ──
   const latestSnap   = snapshotRows[snapshotRows.length - 1] ?? null
   const previousSnap = snapshotRows.length >= 2 ? snapshotRows[snapshotRows.length - 2] : null
@@ -99,6 +104,17 @@ export default async function DashboardPage() {
     ? latestSnap.net_worth - earliestYTD.net_worth : null
 
   const hasPortfolioHistory = snapshotRows.length >= 2
+
+  const portfolioPct = (hasPortfolioHistory && previousSnap && previousSnap.invested_assets !== 0)
+    ? (latestSnap!.invested_assets - previousSnap.invested_assets) / previousSnap.invested_assets * 100
+    : null
+
+  const holdingsWithChange = ((holdings as Holding[]) ?? [])
+    .filter(h => h.prior_close > 0)
+    .map(h => ({ ticker: h.ticker, pct: (h.current_value - h.prior_close) / h.prior_close * 100 }))
+
+  const winner = holdingsWithChange.length > 0 ? holdingsWithChange.reduce((b, h) => h.pct > b.pct ? h : b) : null
+  const loser  = holdingsWithChange.length > 0 ? holdingsWithChange.reduce((w, h) => h.pct < w.pct ? h : w) : null
 
   // ── Dashboard buckets ──
   const buckets = [
@@ -152,6 +168,16 @@ export default async function DashboardPage() {
       </div>
 
       <div className="body">
+        <MarketSummary
+          userName={userName}
+          hasPortfolioHistory={hasPortfolioHistory}
+          todayChange={todayChange}
+          portfolioPct={portfolioPct}
+          winner={winner}
+          loser={loser}
+          coastPct={e.coastPct}
+        />
+
         {/* Row 1 — Freedom ring + Net worth */}
         <div className="grid2" style={{ marginBottom: 18 }}>
           {/* Freedom score */}
@@ -247,6 +273,18 @@ export default async function DashboardPage() {
           </div>
         </div>
 
+        {/* Row 2.5 — Today's change attribution */}
+        <div style={{ marginBottom: 18 }}>
+          {hasPortfolioHistory && latestSnap && previousSnap ? (
+            <NetWorthAttribution holdings={(holdings as Holding[]) ?? []} latestSnap={latestSnap} previousSnap={previousSnap} />
+          ) : (
+            <div className="card">
+              <div className="cardtitle" style={{ marginBottom: 8 }}>Today&apos;s change</div>
+              <p className="subtle">Building history — check back tomorrow to see day-over-day changes.</p>
+            </div>
+          )}
+        </div>
+
         {/* Row 3 — Historical charts */}
         <div style={{ marginBottom: 18 }}>
           <HistoryCharts snapshots={snapshotRows} />
@@ -274,18 +312,26 @@ export default async function DashboardPage() {
               )
             })}
 
-            {milestones.filter(m => !m.done).slice(0, 2).map((m, idx, arr) => (
-              <div className="mile" key={m.name} style={idx === arr.length - 1 ? { borderBottom: 'none' } : {}}>
-                <span className="miletick" />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 6 }}>{m.name}</div>
-                  <div className="track">
-                    <div className="fillamb" style={{ width: `${m.pct}%` }} />
+            {milestones.filter(m => !m.done).slice(0, 2).map((m, idx, arr) => {
+              const f = goalForecasts.find(g => g.name === m.name)
+              return (
+                <div className="mile" key={m.name} style={idx === arr.length - 1 ? { borderBottom: 'none' } : {}}>
+                  <span className="miletick" />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 6 }}>{m.name}</div>
+                    <div className="track">
+                      <div className="fillamb" style={{ width: `${m.pct}%` }} />
+                    </div>
+                    {f && (
+                      <div className="subtle" style={{ marginTop: 6, fontSize: 11 }}>
+                        Exp: {f.expected} · Likely: {f.likely} · Aggr: {f.aggressive}
+                      </div>
+                    )}
                   </div>
+                  <span className="subtle" style={{ marginLeft: 12 }}>{m.pct}%</span>
                 </div>
-                <span className="subtle" style={{ marginLeft: 12 }}>{m.pct}%</span>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* Where your money lives */}

@@ -3,7 +3,15 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Holding } from '@/types'
+import { Holding, AssetClass } from '@/types'
+
+const ASSET_CLASS_OPTIONS: { value: AssetClass; label: string }[] = [
+  { value: 'us_stock',            label: 'US Stock' },
+  { value: 'international_stock', label: 'International Stock' },
+  { value: 'bond',                label: 'Bond' },
+  { value: 'cash',                label: 'Cash' },
+  { value: 'other',               label: 'Other' },
+]
 
 type FieldDef = { key: string; label: string; placeholder?: string; type?: string; step?: string }
 
@@ -32,6 +40,7 @@ export default function DividendsClient({ holdings: initial, accounts, userId }:
   const [modal, setModal] = useState<null | { mode: 'add' | 'edit'; holding?: Holding }>(null)
   const [form, setForm] = useState<Record<string, string>>({})
   const [linkedAccountId, setLinkedAccountId] = useState<string>('')
+  const [assetClass, setAssetClass] = useState<AssetClass>('us_stock')
   const [saving, setSaving] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -46,6 +55,7 @@ export default function DividendsClient({ holdings: initial, accounts, userId }:
   function openAdd() {
     setForm({ ticker: '', name: '', shares: '', cost_basis: '', current_value: '', annual_dividends: '' })
     setLinkedAccountId('')
+    setAssetClass('us_stock')
     setModal({ mode: 'add' })
   }
 
@@ -56,6 +66,7 @@ export default function DividendsClient({ holdings: initial, accounts, userId }:
       annual_dividends: String(h.annual_dividends),
     })
     setLinkedAccountId(h.account_id ?? '')
+    setAssetClass(h.asset_class ?? 'us_stock')
     setModal({ mode: 'edit', holding: h })
   }
 
@@ -72,6 +83,7 @@ export default function DividendsClient({ holdings: initial, accounts, userId }:
       yield_on_cost: costBasis > 0 ? (annualDividends / costBasis) * 100 : 0,
       drip: modal?.mode === 'edit' ? (modal.holding?.drip ?? false) : false,
       account_id: linkedAccountId || null,
+      asset_class: assetClass,
       user_id: userId,
     }
     if (modal?.mode === 'edit' && modal.holding) {
@@ -281,6 +293,22 @@ export default function DividendsClient({ holdings: initial, accounts, userId }:
                 <option value="">— No account link —</option>
                 {accounts.map(a => (
                   <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Asset class */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#9a8a78', marginBottom: 6 }}>
+                Asset class
+              </label>
+              <select
+                className="inp"
+                value={assetClass}
+                onChange={e => setAssetClass(e.target.value as AssetClass)}
+              >
+                {ASSET_CLASS_OPTIONS.map(o => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
             </div>
